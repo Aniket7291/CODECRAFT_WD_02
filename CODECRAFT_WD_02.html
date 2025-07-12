@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CODECRAFT_WD_02</title>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #1f1f1f;
+      --text-color: #ffffff;
+      --btn-color: #ff6347;
+      --card-color: rgba(255, 255, 255, 0.05);
+    }
+
+    body.light {
+      --bg-color: #f4f4f4;
+      --text-color: #111111;
+      --card-color: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      text-align: center;
+      background: var(--card-color);
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      width: 350px;
+    }
+
+    .time-display {
+      font-size: 48px;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .buttons button, .theme-toggle, .download-btn {
+      padding: 10px 20px;
+      background: var(--btn-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    .buttons button:hover,
+    .theme-toggle:hover,
+    .download-btn:hover {
+      background: #e5533c;
+    }
+
+    .lap-times {
+      max-height: 120px;
+      overflow-y: auto;
+      font-size: 14px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    .lap-times li {
+      margin: 5px 0;
+    }
+
+    .extra-controls {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+
+    @media (max-width: 400px) {
+      .container {
+        width: 90%;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🕒 Stopwatch</h2>
+    <div class="time-display" id="display">00:00:00</div>
+    <div class="buttons">
+      <button onclick="startStopwatch()">Start</button>
+      <button onclick="pauseStopwatch()">Pause</button>
+      <button onclick="resetStopwatch()">Reset</button>
+      <button onclick="recordLap()">Lap</button>
+    </div>
+    <ul class="lap-times" id="laps"></ul>
+    <div class="extra-controls">
+      <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">Switch to Light Theme</button>
+      <button class="download-btn" onclick="downloadLaps()">Download Laps</button>
+    </div>
+  </div>
+
+  <!-- Sound Effects -->
+  <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3" preload="auto"></audio>
+
+  <script>
+    let timer;
+    let startTime;
+    let elapsedTime = 0;
+    let isRunning = false;
+    let lapsData = [];
+
+    const clickSound = document.getElementById('clickSound');
+
+    function playClick() {
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
+
+    function formatTime(ms) {
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+      const seconds = String(totalSeconds % 60).padStart(2, '0');
+      const milliseconds = String(ms % 1000).padStart(3, '0').slice(0, 2);
+      return `${minutes}:${seconds}:${milliseconds}`;
+    }
+
+    function updateDisplay() {
+      const currentTime = Date.now();
+      const time = currentTime - startTime + elapsedTime;
+      document.getElementById('display').textContent = formatTime(time);
+    }
+
+    function startStopwatch() {
+      if (isRunning) return;
+      playClick();
+      startTime = Date.now();
+      timer = setInterval(updateDisplay, 30);
+      isRunning = true;
+    }
+
+    function pauseStopwatch() {
+      if (!isRunning) return;
+      playClick();
+      clearInterval(timer);
+      elapsedTime += Date.now() - startTime;
+      isRunning = false;
+    }
+
+    function resetStopwatch() {
+      playClick();
+      clearInterval(timer);
+      elapsedTime = 0;
+      isRunning = false;
+      document.getElementById('display').textContent = "00:00:00";
+      document.getElementById('laps').innerHTML = "";
+      lapsData = [];
+    }
+
+    function recordLap() {
+      if (!isRunning) return;
+      playClick();
+      const currentTime = Date.now();
+      const lapTime = currentTime - startTime + elapsedTime;
+      const formatted = formatTime(lapTime);
+      const lapList = document.getElementById('laps');
+      const li = document.createElement('li');
+      li.textContent = `Lap ${lapList.children.length + 1}: ${formatted}`;
+      lapList.appendChild(li);
+      lapsData.push(formatted);
+    }
+
+    function toggleTheme() {
+      playClick();
+      document.body.classList.toggle('light');
+      const isLight = document.body.classList.contains('light');
+      document.getElementById('themeBtn').textContent = isLight
+        ? 'Switch to Dark Theme'
+        : 'Switch to Light Theme';
+    }
+
+    function downloadLaps() {
+      playClick();
+      if (lapsData.length === 0) {
+        alert("No lap times to download.");
+        return;
+      }
+      const blob = new Blob([lapsData.join('\n')], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'lap-times.txt';
+      a.click();
+    }
+  </script>
+</body>
+</html>
